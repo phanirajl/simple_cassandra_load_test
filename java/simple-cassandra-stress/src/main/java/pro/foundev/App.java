@@ -51,7 +51,7 @@ public class App
             //setup tables
             session.execute("CREATE KEYSPACE IF NOT EXISTS my_key WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1}");
             session.execute("CREATE TABLE IF NOT EXISTS my_key.my_table (id uuid, name text, address text, state text, zip text, balance int, PRIMARY KEY(id))");
-            session.execute("CREATE TABLE IF NOT EXISTS my_key.my_table_by_zip (zip text, id uuid, balance int, PRIMARY KEY(zip, id))");
+            session.execute("CREATE TABLE IF NOT EXISTS my_key.my_table_by_zip (zip text, id uuid, balance bigint, PRIMARY KEY(zip, id))");
             //setup queries
             final PreparedStatement insert = session.prepare("INSERT INTO my_key.my_table (id, name, address, state, zip, balance) VALUES (?, ?, ?, ?, ?, ?)");
             final PreparedStatement insertRollup = session.prepare("INSERT INTO my_key.my_table_by_zip (zip, id, balance) VALUES (?, ?, ?)");
@@ -65,6 +65,9 @@ public class App
                 if (ids.size() == 0){
                     //return random uuid will be record not found
                     return UUID.randomUUID();
+                }
+                if (ids.size() == 1){
+                    return ids.get(0);
                 }
                 final int itemIndex = rnd.nextInt(ids.size()-1);
                 return ids.get(itemIndex);
@@ -84,7 +87,7 @@ public class App
                                     state, 
                                     zip,
                                     balance))
-                        .addStatement(insertRollup.bind(zip, newId, balance))
+                        .addStatement(insertRollup.bind(zip, newId, Long.valueOf(balance)))
                         .build();
                 } else if (chance > 50 && chance < 75){
                     return rowLookup.bind(getId.get());
